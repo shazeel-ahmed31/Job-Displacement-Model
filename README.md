@@ -1,68 +1,106 @@
-# Job Displacement Model
+# Job Automation Exposure Explorer
 
-An interactive tool designed to evaluate the risk and projected timeline of workplace automation and AI-driven job displacement across diverse industries and professions[cite: 4, 5, 7].
+A lightweight educational calculator for exploring fixed assumptions about task automation exposure.
 
----
+![JavaScript](https://img.shields.io/badge/JavaScript-browser-F7DF1E) ![HTML5](https://img.shields.io/badge/HTML5-semantic-E34F26) ![CSS3](https://img.shields.io/badge/CSS3-responsive-1572B6)
 
-## Screenshots
-
-<div align="center">
-  <h3>Input Form & Parameters</h3>
-  <img src="screenshots/job-analysis-input.png" alt="Job Analysis Input Form" width="450"/>
-  <p><em>Configure job role, skillset complexity, repetitive task percentage, and sector[cite: 7].</em></p>
-</div>
-
-<br/>
-
-<div align="center">
-  <h3>Analysis & Output Results</h3>
-  <img src="screenshots/analysis-results.png" alt="Automation Analysis Results" width="450"/>
-  <p><em>Computed automation risk score (0–100) and displacement timeline projection[cite: 4].</em></p>
-</div>
-
----
+![Actual calculator showing an Accountant example and a 50 out of 100 exposure score](docs/calculator.jpg)
 
 ## Overview
 
-The **Job Displacement Model** provides a data-driven interface to estimate how vulnerable specific roles are to automation[cite: 4, 7]. Users can configure job attributes—such as skill complexity, the proportion of routine or repetitive tasks, industry sector, and economic region—to generate a risk profile and estimated timeline[cite: 4, 5, 7].
+The main application is a static HTML, CSS, and JavaScript page. It uses a deterministic heuristic, **not a trained machine-learning model**. No backend, API keys, accounts, or real labor-market dataset are required. Exposure is not guaranteed job displacement; the score is not a probability.
 
----
+- Select a listed occupation, industry, and economic region.
+- Adjust skill complexity (1–10) and repetitive tasks (0–100%).
+- Inspect the exposure score, illustrative scenario band, and career ideas.
+- Use keyboard-accessible controls with reduced-motion support.
 
-## Features
+## Run locally
 
-- **Granular Job Selection:** Choose from multiple predefined roles across sectors (e.g., Software Developer, Accountant, Cashier, Mechanical Engineer, Nurse)[cite: 6].
-- **Customizable Risk Metrics:**
-  - **Skillset Complexity Slider:** Scale from basic routine skills (1) to highly specialized expertise (10)[cite: 7].
-  - **Repetitive Task Ratio:** Adjust percentage of daily workload composed of routine tasks (0–100%)[cite: 7].
-  - **Industry & Regional Context:** Evaluate exposure across diverse sectors (Healthcare, Manufacturing, Technology, Retail, Finance, etc.) and economic regions[cite: 5, 7].
-- **Dynamic Analysis Output:**
-  - **Automation Risk Score:** A normalized index from 0 to 100 with clear risk tiers (e.g., Low, Moderate, High Risk)[cite: 4].
-  - **Displacement Timeline:** Estimated projection window for automation adoption (e.g., 20+ years, 5–10 years)[cite: 4].
+```sh
+git clone https://github.com/shazeel-ahmed31/Job-Displacement-Model.git
+cd Job-Displacement-Model
+python -m http.server 8000
+```
 
----
+Open http://localhost:8000. Python is only a convenient static server; opening `index.html` directly also works. No npm installation or build is needed to use the page.
 
-## Inputs & Parameters
+## Methodology
 
-| Parameter | Type | Range / Options | Description |
-| :--- | :--- | :--- | :--- |
-| **Job Title** | Dropdown | Predefined list | Selected occupational role[cite: 6, 7] |
-| **Skillset Complexity** | Slider | `1.0` – `10.0` | 1 = Basic skills, 10 = Highly specialized[cite: 7] |
-| **Repetitive Task %** | Slider | `0%` – `100%` | Percentage of tasks that are routine[cite: 7] |
-| **Industry Sector** | Dropdown | Multiple industries | Manufacturing, Retail, Healthcare, Tech, etc.[cite: 5, 7] |
-| **Economic Region** | Dropdown | Regional sectors | Regional economic classification[cite: 7] |
+The original browser formula is preserved and extracted into `scripts/exposure.js`:
 
----
+```text
+raw = 50 + (repetitive_percentage - 50) × 0.8
+         - (skillset_complexity - 5) × 8 + occupation_adjustment
+regional = raw × 0.8 for Developing; raw otherwise
+score = round(clamp(regional, 0, 100), 1 decimal)
+```
 
-## Getting Started
+Occupation adjustment is +20 for Data Entry Clerk, Cashier, Assembly Line Worker, and Bank Teller; −25 for Software Developer, Doctor, Teacher, and Lawyer; zero otherwise. Industry controls career suggestions only, not the score. The region multiplier and occupation weights are arbitrary project assumptions, not measured evidence.
 
-### Prerequisites
+| Displayed score | Exposure label | Illustrative scenario band |
+| --- | --- | --- |
+| 0–20 | Low | 20+ years |
+| >20–40 | Low | 10–20 years |
+| >40–70 | Medium | 5–10 years |
+| >70–100 | High | 0–5 years |
 
-Depending on the environment your project runs on:
-- Modern Web Browser (Chrome, Firefox, Edge)
-- Python 3.8+ (if utilizing a local server or backend API)
+These year bands are fixed mappings, not validated forecasts. They have no reference date and should not guide employment decisions.
 
-### Installation & Setup
+Examples in a Developed region: Accountant with complexity 5 and 50% repetition scores 50; Data Entry Clerk with complexity 2 and 85% repetition yields 122 before clamping, displayed as 100; Software Developer with complexity 9 and 25% repetition yields −27, displayed as 0. The baseline Accountant example in a Developing region scores 40.
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/shazeel-ahmed31/Job-Displacement-Model.git](https://github.com/shazeel-ahmed31/Job-Displacement-Model.git)
+Inputs are checked against the supported categories and finite numerical ranges. Labels and bands use the rounded displayed score, avoiding contradictory boundary results.
+
+## Project structure
+
+```text
+index.html                         Form and results
+styles.css                         Layout, focus, motion preferences
+scripts/exposure.js                Pure validated heuristic
+scripts/app.js                     Browser interactions and text rendering
+scripts/job_displacement_model.py   Separate synthetic-data experiment
+requirements-experiment.txt        Optional experiment dependencies
+tests/exposure.test.js              Calculator regression tests
+docs/calculator.jpg                Actual application screenshot
+.github/workflows/check.yml         Syntax checks and tests
+```
+
+## Testing
+
+Node.js 22 or later is needed for checks, with no third-party JavaScript dependencies:
+
+```sh
+npm run check
+npm test
+```
+
+If Windows prevents the test runner spawning a process, use:
+
+```sh
+node --test --experimental-test-isolation=none tests/exposure.test.js
+```
+
+The five test groups cover examples, invalid values, score boundaries, monotonicity, region effects, deterministic results, and industry suggestions. Browser submission, result focus, and mobile layout were also checked locally. CI performs JavaScript syntax checks and the calculator tests; it does not validate scientific accuracy.
+
+## Optional Python experiment
+
+The retained Python script trains random-forest regression and classification models on generated synthetic examples. It **does not power the webpage** and does not establish real-world predictive validity. Encoders and scaling are now fitted on training rows only. Categories unseen during training receive −1, an experimental fallback that may produce unreliable predictions.
+
+```sh
+python -m venv .venv
+# Activate the environment using your platform's normal command.
+python -m pip install -r requirements-experiment.txt
+python scripts/job_displacement_model.py
+```
+
+Running it writes ignored model files to the current directory. Load only your own trusted model files: joblib uses pickle-based serialization. The experiment was syntax-checked, but training and its metrics were not verified in this audit. Browser and Python algorithms differ intentionally; they must not be treated as interchangeable.
+
+## Limitations and next improvements
+
+No empirical dataset or citations support the current weights. Career ideas are fixed suggestions, not guaranteed safe occupations. Economic-region categories are coarse assumptions. There is no live deployment verified for this repository.
+
+Future work could replace arbitrary weights with cited evidence, validate against independent real-world observations, improve category handling in the separate experiment, and add automated browser tests.
+
+## Author and license
+
+Created by [Shazeel Ahmed](https://github.com/shazeel-ahmed31). No license file is currently included; no open-source license grant is implied.
