@@ -372,3 +372,14 @@ body {
     opacity: 1;
   }
 }
+
+.demo-notice { background: white; color: #333; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+:focus-visible { outline: 3px solid #243b80; outline-offset: 4px; }
+.form-group input[type="range"]:focus-visible { outline: 3px solid #243b80; }
+.range-value, .risk-score, .timeline-value { color: #4655aa; }
+.form-group small { color: #536174; }
+.risk-level.medium-risk { color: #8a3d0b; }
+.risk-level.low-risk { color: #21643e; }
+.main-content > * { min-width: 0; }
+select { max-width: 100%; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

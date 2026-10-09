@@ -1,3 +1,6 @@
+"""Standalone synthetic-data learning experiment; not connected to the browser calculator.
+Metrics describe synthetic held-out samples only, not real labor-market accuracy.
+"""
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -15,7 +18,7 @@ class JobDisplacementPredictor:
         self.scaler = StandardScaler()
         self.label_encoders = {}
         self.is_trained = False
-        
+
         # Future-proof job suggestions database
         self.future_proof_jobs = {
             'technology': [
@@ -39,11 +42,11 @@ class JobDisplacementPredictor:
                 'Change Management Specialist', 'Innovation Manager'
             ]
         }
-    
+
     def generate_synthetic_data(self, n_samples=1000):
         """Generate synthetic training data for the model"""
         np.random.seed(42)
-        
+
         job_titles = [
             'Data Entry Clerk', 'Cashier', 'Assembly Line Worker', 'Truck Driver',
             'Accountant', 'Customer Service Rep', 'Software Developer', 'Teacher',
@@ -51,18 +54,18 @@ class JobDisplacementPredictor:
             'Graphic Designer', 'Mechanical Engineer', 'Nurse', 'Chef',
             'Security Guard', 'Janitor', 'Bank Teller', 'Receptionist'
         ]
-        
-        industries = ['Manufacturing', 'Retail', 'Healthcare', 'Technology', 'Finance', 
+
+        industries = ['Manufacturing', 'Retail', 'Healthcare', 'Technology', 'Finance',
                      'Education', 'Transportation', 'Hospitality', 'Construction']
-        
+
         locations = ['Developed', 'Developing']
-        
+
         data = []
         for _ in range(n_samples):
             job_title = np.random.choice(job_titles)
             industry = np.random.choice(industries)
             location = np.random.choice(locations)
-            
+
             # Generate features based on job characteristics
             if job_title in ['Data Entry Clerk', 'Cashier', 'Assembly Line Worker']:
                 repetitive_percentage = np.random.uniform(70, 95)
@@ -79,11 +82,11 @@ class JobDisplacementPredictor:
                 skillset_complexity = np.random.uniform(4, 7)
                 automation_risk = np.random.uniform(40, 75)
                 timeline_category = np.random.choice([1, 2], p=[0.6, 0.4])
-            
+
             # Adjust for location
             if location == 'Developing':
                 automation_risk *= 0.8  # Lower automation risk in developing economies
-            
+
             data.append({
                 'job_title': job_title,
                 'skillset_complexity': skillset_complexity,
@@ -93,16 +96,16 @@ class JobDisplacementPredictor:
                 'automation_risk': min(100, max(0, automation_risk)),
                 'timeline_category': timeline_category
             })
-        
+
         return pd.DataFrame(data)
-    
+
     def preprocess_data(self, df, is_training=True):
         """Preprocess the data for training or prediction"""
         df_processed = df.copy()
-        
+
         # Encode categorical variables
         categorical_cols = ['job_title', 'industry', 'location']
-        
+
         for col in categorical_cols:
             if is_training:
                 le = LabelEncoder()
@@ -117,104 +120,119 @@ class JobDisplacementPredictor:
                     )
                 else:
                     df_processed[col + '_encoded'] = -1
-        
+
         # Select features for model
         feature_cols = ['skillset_complexity', 'repetitive_percentage'] + \
                       [col + '_encoded' for col in categorical_cols]
-        
+
         X = df_processed[feature_cols]
-        
+
         if is_training:
             X_scaled = self.scaler.fit_transform(X)
         else:
             X_scaled = self.scaler.transform(X)
-        
+
         return X_scaled, df_processed
-    
+
     def train_model(self):
         """Train the job displacement prediction models"""
         print("Generating synthetic training data...")
         df = self.generate_synthetic_data(2000)
-        
+
         print("Preprocessing data...")
-        X, df_processed = self.preprocess_data(df, is_training=True)
         y_risk = df['automation_risk']
         y_timeline = df['timeline_category']
-        
+
         # Split data
-        X_train, X_test, y_risk_train, y_risk_test, y_timeline_train, y_timeline_test = \
-            train_test_split(X, y_risk, y_timeline, test_size=0.2, random_state=42)
-        
+        train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+        # Fit encoders and scaler on training rows only to avoid test-data leakage.
+        X_train, _ = self.preprocess_data(train_df, is_training=True)
+        X_test, _ = self.preprocess_data(test_df, is_training=False)
+        y_risk_train, y_risk_test = train_df['automation_risk'], test_df['automation_risk']
+        y_timeline_train, y_timeline_test = train_df['timeline_category'], test_df['timeline_category']
+
         print("Training automation risk model...")
         self.risk_model.fit(X_train, y_risk_train)
         risk_pred = self.risk_model.predict(X_test)
         risk_mse = mean_squared_error(y_risk_test, risk_pred)
         print(f"Risk Model MSE: {risk_mse:.2f}")
-        
+
         print("Training timeline prediction model...")
         self.timeline_model.fit(X_train, y_timeline_train)
         timeline_pred = self.timeline_model.predict(X_test)
         timeline_acc = accuracy_score(y_timeline_test, timeline_pred)
         print(f"Timeline Model Accuracy: {timeline_acc:.2f}")
-        
+
         self.is_trained = True
         print("Model training completed!")
-        
+
         # Save models
         self.save_models()
-    
+
     def predict(self, job_data):
         """Make predictions for a single job"""
+        required = {'job_title', 'industry', 'location', 'skillset_complexity', 'repetitive_percentage'}
+        if not isinstance(job_data, dict) or not required.issubset(job_data):
+            raise ValueError("Supply all five job inputs")
+        for key, low, high in [('skillset_complexity', 1, 10), ('repetitive_percentage', 0, 100)]:
+            value = job_data[key]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not np.isfinite(value) or not low <= value <= high:
+                raise ValueError(f"Invalid {key}")
+        for key in ['job_title', 'industry', 'location']:
+            if not isinstance(job_data[key], str) or not job_data[key].strip():
+                raise ValueError(f"Invalid {key}")
+        if job_data['location'] not in ['Developed', 'Developing']:
+            raise ValueError("Unsupported region")
         if not self.is_trained:
             print("Loading pre-trained models...")
             self.load_models()
-        
+
         # Convert input to DataFrame
         df_input = pd.DataFrame([job_data])
-        
+
         # Preprocess
         X_scaled, _ = self.preprocess_data(df_input, is_training=False)
-        
+
         # Predict automation risk
         risk_score = self.risk_model.predict(X_scaled)[0]
-        risk_score = max(0, min(100, risk_score))  # Ensure within 0-100 range
-        
+        risk_score = round(max(0, min(100, risk_score)), 1)  # Ensure within 0-100 range
+
         # Predict timeline
         timeline_category = self.timeline_model.predict(X_scaled)[0]
         timeline_map = {
             0: "0-5 years",
-            1: "5-10 years", 
+            1: "5-10 years",
             2: "10-20 years",
             3: "20+ years"
         }
         timeline = timeline_map.get(timeline_category, "Unknown")
-        
+
         # Get future-proof job suggestions
         industry_lower = job_data['industry'].lower()
         suggestions = []
-        
+
         for category, jobs in self.future_proof_jobs.items():
             if category in industry_lower or industry_lower in category:
                 suggestions.extend(jobs[:3])
                 break
-        
+
         if not suggestions:
             # Default suggestions for high-risk jobs
             if risk_score > 70:
                 suggestions = [
-                    'Data Analyst', 'Digital Marketing Specialist', 
+                    'Data Analyst', 'Digital Marketing Specialist',
                     'Customer Success Manager', 'Process Improvement Specialist'
                 ]
             else:
                 suggestions = ['Skill Enhancement in Current Role', 'Leadership Development']
-        
+
         return {
             'automation_risk_score': round(risk_score, 1),
             'displacement_timeline': timeline,
             'future_proof_suggestions': suggestions[:4],
             'risk_level': 'High' if risk_score > 70 else 'Medium' if risk_score > 40 else 'Low'
         }
-    
+
     def save_models(self):
         """Save trained models and encoders"""
         joblib.dump(self.risk_model, 'risk_model.pkl')
@@ -222,7 +240,7 @@ class JobDisplacementPredictor:
         joblib.dump(self.scaler, 'scaler.pkl')
         joblib.dump(self.label_encoders, 'label_encoders.pkl')
         print("Models saved successfully!")
-    
+
     def load_models(self):
         """Load pre-trained models and encoders"""
         try:
@@ -239,10 +257,10 @@ class JobDisplacementPredictor:
 # Example usage and API endpoint simulation
 def main():
     predictor = JobDisplacementPredictor()
-    
+
     # Train the model
     predictor.train_model()
-    
+
     # Example predictions
     test_jobs = [
         {
@@ -267,11 +285,11 @@ def main():
             'location': 'Developed'
         }
     ]
-    
+
     print("\n" + "="*50)
     print("JOB DISPLACEMENT PREDICTIONS")
     print("="*50)
-    
+
     for i, job in enumerate(test_jobs, 1):
         print(f"\nJob {i}: {job['job_title']}")
         print("-" * 30)

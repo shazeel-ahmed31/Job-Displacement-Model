@@ -1,8 +1,12 @@
 {
-  "name": "my-v0-project",
+  "name": "job-automation-exposure-explorer",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "echo 'no build script'"
+    "test": "node --test",
+    "check": "node --check scripts/exposure.js && node --check scripts/app.js"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

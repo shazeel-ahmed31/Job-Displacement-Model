@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Job Displacement Forecasting Tool</title>
+    <title>Job Automation Exposure Explorer</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>🤖 AI Job Displacement Forecasting Tool</h1>
-            <p>Predict automation risk and discover future-proof career paths</p>
+            <h1>🤖 Job Automation Exposure Explorer</h1>
+            <p>Explore illustrative task exposure using transparent, fixed rules</p>
         </header>
 
+        <p class="demo-notice">Educational heuristic demo. Exposure does not mean guaranteed job displacement. No real labor-market dataset or trained model powers this page.</p>
         <main class="main-content">
             <div class="input-section">
                 <h2>Job Analysis Input</h2>
@@ -46,18 +47,18 @@
 
                     <div class="form-group">
                         <label for="skillsetComplexity">Skillset Complexity (1-10)</label>
-                        <input type="range" id="skillsetComplexity" name="skillsetComplexity" 
+                        <input type="range" id="skillsetComplexity" name="skillsetComplexity" aria-describedby="skillHelp"
                                min="1" max="10" value="5" step="0.1">
                         <span class="range-value" id="skillsetValue">5.0</span>
-                        <small>1 = Basic skills, 10 = Highly specialized expertise</small>
+                        <small id="skillHelp">1 = Basic skills, 10 = Highly specialized expertise</small>
                     </div>
 
                     <div class="form-group">
                         <label for="repetitivePercentage">Repetitive Task Percentage (%)</label>
-                        <input type="range" id="repetitivePercentage" name="repetitivePercentage" 
+                        <input type="range" id="repetitivePercentage" name="repetitivePercentage" aria-describedby="repetitiveHelp"
                                min="0" max="100" value="50" step="1">
                         <span class="range-value" id="repetitiveValue">50%</span>
-                        <small>Percentage of job involving repetitive, routine tasks</small>
+                        <small id="repetitiveHelp">Percentage of job involving repetitive, routine tasks</small>
                     </div>
 
                     <div class="form-group">
@@ -89,15 +90,16 @@
                         <span class="btn-text">Analyze Job Risk</span>
                         <span class="btn-loader" style="display: none;">Analyzing...</span>
                     </button>
+                <p id="formStatus" role="alert"></p>
                 </form>
             </div>
 
             <div class="results-section" id="resultsSection" style="display: none;">
-                <h2>📊 Analysis Results</h2>
-                
+                <h2 id="resultsHeading" tabindex="-1">📊 Analysis Results</h2>
+
                 <div class="risk-score-card">
                     <div class="risk-score-header">
-                        <h3>Automation Risk Score</h3>
+                        <h3>Illustrative Exposure Score</h3>
                         <div class="risk-score" id="riskScore">--</div>
                     </div>
                     <div class="risk-level" id="riskLevel">--</div>
@@ -107,12 +109,12 @@
                 </div>
 
                 <div class="timeline-card">
-                    <h3>⏰ Displacement Timeline</h3>
+                    <h3>⏰ Illustrative Scenario Band</h3>
                     <div class="timeline-value" id="timelineValue">--</div>
                 </div>
 
                 <div class="suggestions-card">
-                    <h3>🚀 Future-Proof Career Suggestions</h3>
+                    <h3>🚀 Career Ideas to Explore</h3>
                     <ul class="suggestions-list" id="suggestionsList">
                         <!-- Suggestions will be populated here -->
                     </ul>
@@ -128,161 +130,11 @@
         </main>
 
         <footer class="footer">
-            <p>© 2024 AI Job Displacement Forecasting Tool | Powered by Machine Learning</p>
+            <p>Job Automation Exposure Explorer | Educational heuristic demo</p>
         </footer>
     </div>
 
-    <script>
-        // Update range input displays
-        document.getElementById('skillsetComplexity').addEventListener('input', function() {
-            document.getElementById('skillsetValue').textContent = this.value;
-        });
-
-        document.getElementById('repetitivePercentage').addEventListener('input', function() {
-            document.getElementById('repetitiveValue').textContent = this.value + '%';
-        });
-
-        // Form submission handler
-        document.getElementById('jobForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            analyzeJob();
-        });
-
-        function analyzeJob() {
-            const form = document.getElementById('jobForm');
-            const formData = new FormData(form);
-            
-            // Show loading state
-            const btn = document.querySelector('.analyze-btn');
-            btn.querySelector('.btn-text').style.display = 'none';
-            btn.querySelector('.btn-loader').style.display = 'inline';
-            btn.disabled = true;
-
-            // Simulate API call with mock data
-            setTimeout(() => {
-                const jobData = {
-                    job_title: formData.get('jobTitle'),
-                    skillset_complexity: parseFloat(formData.get('skillsetComplexity')),
-                    repetitive_percentage: parseFloat(formData.get('repetitivePercentage')),
-                    industry: formData.get('industry'),
-                    location: formData.get('location')
-                };
-
-                // Mock prediction logic
-                const mockResult = generateMockPrediction(jobData);
-                displayResults(mockResult);
-
-                // Reset button
-                btn.querySelector('.btn-text').style.display = 'inline';
-                btn.querySelector('.btn-loader').style.display = 'none';
-                btn.disabled = false;
-            }, 2000);
-        }
-
-        function generateMockPrediction(jobData) {
-            // Simple mock prediction logic
-            let riskScore = 50;
-            
-            // Adjust based on repetitive percentage
-            riskScore += (jobData.repetitive_percentage - 50) * 0.8;
-            
-            // Adjust based on skillset complexity (inverse relationship)
-            riskScore -= (jobData.skillset_complexity - 5) * 8;
-            
-            // Adjust based on job title
-            const highRiskJobs = ['Data Entry Clerk', 'Cashier', 'Assembly Line Worker', 'Bank Teller'];
-            const lowRiskJobs = ['Software Developer', 'Doctor', 'Teacher', 'Lawyer'];
-            
-            if (highRiskJobs.includes(jobData.job_title)) {
-                riskScore += 20;
-            } else if (lowRiskJobs.includes(jobData.job_title)) {
-                riskScore -= 25;
-            }
-            
-            // Adjust for location
-            if (jobData.location === 'Developing') {
-                riskScore *= 0.8;
-            }
-            
-            riskScore = Math.max(0, Math.min(100, riskScore));
-            
-            const timeline = riskScore > 70 ? '0-5 years' : 
-                           riskScore > 40 ? '5-10 years' : 
-                           riskScore > 20 ? '10-20 years' : '20+ years';
-            
-            const suggestions = getSuggestions(jobData.industry, riskScore);
-            
-            return {
-                automation_risk_score: Math.round(riskScore * 10) / 10,
-                displacement_timeline: timeline,
-                future_proof_suggestions: suggestions,
-                risk_level: riskScore > 70 ? 'High' : riskScore > 40 ? 'Medium' : 'Low'
-            };
-        }
-
-        function getSuggestions(industry, riskScore) {
-            const suggestionMap = {
-                'Technology': ['AI/ML Engineer', 'Cybersecurity Specialist', 'Cloud Architect', 'DevOps Engineer'],
-                'Healthcare': ['Mental Health Counselor', 'Nurse Practitioner', 'Healthcare Data Analyst', 'Telemedicine Specialist'],
-                'Finance': ['Financial Analyst', 'Risk Management Specialist', 'Fintech Developer', 'Investment Advisor'],
-                'Education': ['Online Learning Designer', 'Educational Technology Specialist', 'Curriculum Developer', 'Corporate Trainer'],
-                'Manufacturing': ['Automation Engineer', 'Quality Control Specialist', 'Supply Chain Analyst', 'Industrial Designer'],
-                'Retail': ['E-commerce Manager', 'Customer Experience Designer', 'Digital Marketing Specialist', 'Brand Manager']
-            };
-            
-            return suggestionMap[industry] || ['Data Analyst', 'Project Manager', 'Business Consultant', 'Digital Marketing Specialist'];
-        }
-
-        function displayResults(result) {
-            // Show results section
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
-            
-            // Update risk score
-            document.getElementById('riskScore').textContent = result.automation_risk_score + '/100';
-            document.getElementById('riskLevel').textContent = result.risk_level + ' Risk';
-            
-            // Update risk level styling
-            const riskLevel = document.getElementById('riskLevel');
-            riskLevel.className = 'risk-level ' + result.risk_level.toLowerCase() + '-risk';
-            
-            // Update risk bar
-            const riskFill = document.getElementById('riskFill');
-            riskFill.style.width = result.automation_risk_score + '%';
-            riskFill.className = 'risk-fill ' + result.risk_level.toLowerCase() + '-risk';
-            
-            // Update timeline
-            document.getElementById('timelineValue').textContent = result.displacement_timeline;
-            
-            // Update suggestions
-            const suggestionsList = document.getElementById('suggestionsList');
-            suggestionsList.innerHTML = '';
-            result.future_proof_suggestions.forEach(suggestion => {
-                const li = document.createElement('li');
-                li.textContent = suggestion;
-                suggestionsList.appendChild(li);
-            });
-            
-            // Update insights
-            const insights = generateInsights(result);
-            document.getElementById('insightsContent').innerHTML = insights;
-        }
-
-        function generateInsights(result) {
-            let insights = '';
-            
-            if (result.risk_level === 'High') {
-                insights += '<p><strong>⚠️ High Automation Risk:</strong> This role has significant automation potential. Consider upskilling or transitioning to complementary roles.</p>';
-            } else if (result.risk_level === 'Medium') {
-                insights += '<p><strong>⚡ Moderate Risk:</strong> Some aspects of this role may be automated, but human skills remain valuable. Focus on developing unique capabilities.</p>';
-            } else {
-                insights += '<p><strong>✅ Lower Risk:</strong> This role requires complex human skills that are difficult to automate. Continue developing expertise in your field.</p>';
-            }
-            
-            insights += '<p><strong>💼 Recommendation:</strong> Regardless of risk level, continuous learning and adaptation are key to career resilience in the AI age.</p>';
-            
-            return insights;
-        }
-    </script>
+    <script src="scripts/exposure.js"></script>
+    <script src="scripts/app.js"></script>
 </body>
 </html>
